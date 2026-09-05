@@ -19,6 +19,7 @@ import keiyoushi.utils.parseAs
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -114,6 +115,24 @@ abstract class SunshineButterflyScans : KeiSource() {
         }
 
         return MangasPage(mangaList, false)
+    }
+
+    override suspend fun getMangaByUrl(url: HttpUrl): SManga? {
+        if (url.host != baseUrl.toHttpUrl().host || url.pathSegments[0] != "projects" || url.queryParameter("n") == null) {
+            return null
+        }
+
+        val mangaUrl = "/projects?n=${url.queryParameter("n")}"
+        val manga = SManga.create().apply {
+            this.url = mangaUrl
+        }
+
+        return getMangaUpdate(manga, emptyList(), fetchDetails = true, fetchChapters = false)
+            .manga
+            .apply {
+                initialized = true
+                this.url = mangaUrl
+            }
     }
 
     // =============================== Filters ==============================

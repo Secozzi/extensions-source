@@ -13,9 +13,9 @@ import eu.kanade.tachiyomi.source.model.SMangaUpdate
 import keiyoushi.annotation.Source
 import keiyoushi.lib.textinterceptor.TextInterceptor
 import keiyoushi.lib.textinterceptor.TextInterceptorHelper
-import keiyoushi.utils.asJsoup
 import keiyoushi.network.get
 import keiyoushi.source.KeiSource
+import keiyoushi.utils.asJsoup
 import keiyoushi.utils.getPreferencesLazy
 import keiyoushi.utils.parseAs
 import kotlinx.coroutines.async
@@ -34,12 +34,10 @@ abstract class Tapastic :
 
     private val apiUrl = "https://story-api.${baseUrl.substringAfterLast("/")}"
 
-    override val supportsLatest = true
-
     private val preferences: SharedPreferences by getPreferencesLazy()
 
     override fun OkHttpClient.Builder.configureClient() = apply {
-        TextInterceptor()
+        addInterceptor(TextInterceptor())
     }
 
     override fun Headers.Builder.configureHeaders() = apply {

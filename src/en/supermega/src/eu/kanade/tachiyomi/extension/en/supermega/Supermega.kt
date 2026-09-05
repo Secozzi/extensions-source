@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.extension.en.supermega
 
-import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
@@ -11,6 +10,7 @@ import keiyoushi.annotation.Source
 import keiyoushi.network.get
 import keiyoushi.source.KeiSource
 import keiyoushi.utils.asJsoup
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 @Source
 abstract class Supermega : KeiSource() {
@@ -24,7 +24,7 @@ abstract class Supermega : KeiSource() {
         author = "JohnnySmash"
         status = SManga.ONGOING
         description = ""
-        thumbnail_url = "https://www.supermegacomics.com/runningman_inverted.PNG"
+        thumbnail_url = "https://www.supermegacomics.com/runningman.png"
     }
 
     override suspend fun getPopularManga(page: Int): MangasPage = MangasPage(listOf(createManga()), false)
@@ -41,9 +41,9 @@ abstract class Supermega : KeiSource() {
     ): SMangaUpdate {
         val manga = createManga()
         val chapters = if (fetchChapters) {
-            val document = client.newCall(GET(baseUrl)).execute().asJsoup()
+            val document = client.get(baseUrl).asJsoup()
             val latestComicNumber = document.selectFirst("[name='bigbuttonprevious']")
-                ?.parent()?.attr("href")?.substringAfter("?i=")?.toIntOrNull()?.plus(1) ?: 0
+                ?.parent()?.attr("abs:href")?.toHttpUrlOrNull()?.queryParameter("i")?.toIntOrNull()?.plus(1) ?: 0
 
             (1..latestComicNumber).reversed().map {
                 SChapter.create().apply {

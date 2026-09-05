@@ -12,8 +12,9 @@ import keiyoushi.lib.textinterceptor.TextInterceptorHelper
 import keiyoushi.network.get
 import keiyoushi.source.KeiSource
 import keiyoushi.utils.asJsoup
+import keiyoushi.utils.tryParseDate
 import okhttp3.OkHttpClient
-import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Source
@@ -48,6 +49,8 @@ abstract class SwordsComic : KeiSource() {
 
     // Updates
 
+    private val dateFormat = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.US)
+
     override suspend fun fetchMangaUpdate(
         manga: SManga,
         chapters: List<SChapter>,
@@ -57,14 +60,14 @@ abstract class SwordsComic : KeiSource() {
         val manga = createManga().apply { initialized = true }
 
         val chapters = if (fetchChapters) {
-            client.get(baseUrl + manga.url).asJsoup()
+            client.get(getMangaUrl(manga)).asJsoup()
                 .select("a.archive-tile")
                 .map { element ->
                     SChapter.create().apply {
-                        name = element.select("strong").text()
-                        setUrlWithoutDomain(element.attr("href"))
-                        date_upload = element.select("small").text()
-                            .let { SimpleDateFormat("dd MMM yyyy", Locale.US).parse(it)?.time ?: 0L }
+                        name = element.selectFirst("strong")!!.text()
+                        setUrlWithoutDomain(element.attr("abs:href"))
+                        date_upload = element.selectFirst("small")?.text()
+                            .let { dateFormat.tryParseDate(it) }
                     }
                 }
                 .reversed()
@@ -78,7 +81,7 @@ abstract class SwordsComic : KeiSource() {
     // Pages
 
     override suspend fun getPageList(chapter: SChapter): List<Page> {
-        val imageElement = client.get(baseUrl + chapter.url).asJsoup().select("img#comic-image")
+        val imageElement = client.get(getChapterUrl(chapter)).asJsoup().select("img#comic-image")
         if (!imageElement.hasAttr("title")) {
             return listOf(Page(0, "", imageElement.attr("abs:src")))
         }
